@@ -75,7 +75,11 @@ for sample_id, sample in enumerate(data):
 
         encoded_input = tokenizer.batch_encode_plus(inputs, padding=True)
 
-        prediction = model(torch.tensor(encoded_input['input_ids'], device='cuda'))['logits']
+        # prediction = model(torch.tensor(encoded_input['input_ids'], device='cuda'))['logits']
+        prediction = model(
+            torch.tensor(encoded_input['input_ids'], device='cuda'),
+            attention_mask=torch.tensor(encoded_input['attention_mask'], device='cuda'))['logits'] # LDN
+
 
         predicted_label = torch.argmax(prediction, dim=1)
         if 0 in predicted_label:

@@ -134,7 +134,7 @@ def get_generations(model, dataloader, number_of_generations):
                                                         use_cache=True,
                                                         num_beams=num_beams,
                                                         num_return_sequences=num_beams,
-                                                        do_sample=False,
+                                                        do_sample=True, # False LDN
                                                         max_length=input_ids.shape[1] +
                                                         max_length_of_generated_sequence,
                                                         eos_token_id=period_token_id,

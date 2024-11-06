@@ -54,7 +54,7 @@ device_map = {
     'lm_head': 1
 }
 
-data_dir = ''
+data_dir = '/workspace_cuda/semantic_density/experiment_code'
 hf_datasets_cache = ''
 output_dir = ''
 hf_cache_dir = ''

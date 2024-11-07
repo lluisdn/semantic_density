@@ -21,10 +21,11 @@ os.environ["CUDA_VISIBLE_DEVICES"]=args.cuda_device
 
 import accelerate
 import config
+import numpy as np
+if not hasattr(np, 'object'):
+    np.object = object
 import datasets
 import evaluate
-import numpy as np
-np.object = object
 import torch
 import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, GPTQConfig
@@ -130,12 +131,18 @@ def get_generations(model, dataloader, number_of_generations):
                     question_id_set.add(batch['question_id'][0])
             input_ids = torch.cat(batch['input_ids']).to(device).reshape(
                 1, -1) if args.dataset == 'trivia_qa' else batch['input_ids'].to(device)
+            if tokenizer.pad_token_id is None:
+                tokenizer.pad_token_id = tokenizer.eos_token_id
+            attention_mask = input_ids.ne(tokenizer.pad_token_id).long().to(device)
+            
             if args.decoding_method == 'beam_search':
                 most_likely_generation = model.generate(input_ids,
+                                                        pad_token_id=tokenizer.pad_token_id,
+                                                        attention_mask=attention_mask,
                                                         use_cache=True,
                                                         num_beams=num_beams,
                                                         num_return_sequences=num_beams,
-                                                        do_sample=True, # False LDN
+                                                        do_sample=False, # False LDN
                                                         max_length=input_ids.shape[1] +
                                                         max_length_of_generated_sequence,
                                                         eos_token_id=period_token_id,
@@ -144,6 +151,7 @@ def get_generations(model, dataloader, number_of_generations):
                                                         diversity_penalty=1.0)
             elif args.decoding_method == 'greedy':
                 most_likely_generation = model.generate(input_ids,
+                                                        attention_mask=attention_mask,
                                                         num_beams=1,
                                                         do_sample=False,
                                                         max_length=input_ids.shape[1] +
@@ -158,6 +166,8 @@ def get_generations(model, dataloader, number_of_generations):
             for i in range(number_of_generations):
 
                 generation = model.generate(input_ids,
+                                            pad_token_id=tokenizer.pad_token_id,
+                                            attention_mask=attention_mask,
                                             do_sample=True,
                                             num_return_sequences=1,
                                             num_beams=args.num_beams,

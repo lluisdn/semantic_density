@@ -24,6 +24,7 @@ import config
 import datasets
 import evaluate
 import numpy as np
+np.object = object
 import torch
 import tqdm
 from transformers import AutoModelForCausalLM, AutoTokenizer, GPTQConfig

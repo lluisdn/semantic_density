@@ -102,6 +102,7 @@ def get_generations(model, dataloader, number_of_generations):
             input_ids = torch.tensor(batch['input_ids']).to(device).reshape(1, -1)
             if args.decoding_method == 'beam_search':
                 most_likely_generation = model.generate(input_ids,
+                                                        attention_mask=attention_mask,  # Pass attention mask
                                                         use_cache=True,
                                                         num_beams=num_beams,
                                                         num_return_sequences=num_beams,
@@ -111,15 +112,19 @@ def get_generations(model, dataloader, number_of_generations):
                                                         eos_token_id=period_token_id,
                                                         bad_words_ids=question_framing_ids,
                                                         num_beam_groups=num_beams,
-                                                        diversity_penalty=1.0)
+                                                        diversity_penalty=1.0,
+                                                        pad_token_id=tokenizer.eos_token_id # Ensure pad_token_id is set
+                                                       )
             elif args.decoding_method == 'greedy':
                 most_likely_generation = model.generate(input_ids,
+                                                        attention_mask=attention_mask,  # Pass attention mask
                                                         num_beams=1,
                                                         do_sample=False,
                                                         max_length=input_ids.shape[1] +
                                                         max_length_of_generated_sequence,
                                                         eos_token_id=period_token_id,
-                                                        bad_words_ids=question_framing_ids)
+                                                        bad_words_ids=question_framing_ids,
+                                                        pad_token_id=tokenizer.eos_token_id # Ensure pad_token_id is set)
 
             input_length = input_ids.shape[1]
             generations = torch.ones((number_of_generations, input_length + max_length_of_generated_sequence),
@@ -128,6 +133,7 @@ def get_generations(model, dataloader, number_of_generations):
             for i in range(number_of_generations):
 
                 generation = model.generate(input_ids,
+                                            attention_mask=attention_mask,  # Pass attention mask
                                             do_sample=True,
                                             num_return_sequences=1,
                                             num_beams=args.num_beams,
@@ -135,7 +141,8 @@ def get_generations(model, dataloader, number_of_generations):
                                             eos_token_id=period_token_id,
                                             temperature=args.temperature,
                                             bad_words_ids=question_framing_ids,
-                                            top_p=args.top_p)
+                                            top_p=args.top_p,
+                                            pad_token_id=tokenizer.eos_token_id # Ensure pad_token_id is set)
                 generations[i, :generation.shape[1]] = generation
 
             generations = torch.reshape(generations, (-1, number_of_generations, generations.shape[-1]))
